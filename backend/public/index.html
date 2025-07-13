@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kribi Port Authority API</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        .status {
+            background-color: #2ecc71;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        .endpoint {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+        }
+        .method {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .path {
+            font-family: monospace;
+            color: #2980b9;
+        }
+        .description {
+            margin: 10px 0;
+        }
+        .container {
+            margin-bottom: 40px;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Kribi Port Authority API <span class="status">Online</span></h1>
+        <p>Welcome to the Kribi Port Authority API service</p>
+    </header>
+
+    <div class="container">
+        <h2>API Endpoints</h2>
+        
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="path">/api/health</div>
+            <div class="description">Check if the API is running</div>
+        </div>
+
+        <div class="endpoint">
+            <div class="method">POST</div>
+            <div class="path">/api/auth/register</div>
+            <div class="description">Register a new user</div>
+        </div>
+
+        <div class="endpoint">
+            <div class="method">POST</div>
+            <div class="path">/api/auth/login</div>
+            <div class="description">Authenticate user and get access token</div>
+        </div>
+
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="path">/api/ships</div>
+            <div class="description">Get list of ships (requires authentication)</div>
+        </div>
+
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="path">/api/docks</div>
+            <div class="description">Get list of docks (requires authentication)</div>
+        </div>
+
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="path">/api/berthings</div>
+            <div class="description">Get list of berthing records (requires authentication)</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>API Documentation</h2>
+        <p>For detailed API documentation, please visit the <a href="/api-docs">API Documentation</a> page.</p>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Kribi Port Authority. All rights reserved.</p>
+    </footer>
+</body>
+</html>
