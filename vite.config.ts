@@ -18,7 +18,6 @@ export default defineConfig(({ mode }): UserConfig => {
       cors: mode === 'development',
       // Allow access from any host
       allowedHosts: true,
-      // Enable CORS in development
     },
     plugins: [
       react({
@@ -45,10 +44,16 @@ export default defineConfig(({ mode }): UserConfig => {
     build: {
       // Output directory for production build
       outDir: 'dist',
-      // Generate sourcemaps in development
-      sourcemap: mode === 'development',
+      // Generate sourcemaps in development, none in production for better performance
+      sourcemap: mode !== 'production' ? 'inline' : false,
       // Minify in production
       minify: mode === 'production' ? 'esbuild' : false,
+      // Enable production optimizations
+      target: 'esnext',
+      // Enable tree shaking and dead code elimination
+      commonjsOptions: {
+        transformMixedEsModules: true,
+      },
       // Rollup options for better code splitting
       rollupOptions: {
         output: {
@@ -64,16 +69,29 @@ export default defineConfig(({ mode }): UserConfig => {
       },
       // Enable gzip and brotli compression in production
       reportCompressedSize: mode === 'production',
+      // Enable CSS code splitting
+      cssCodeSplit: true,
+      // Enable CSS minification in production
+      cssMinify: mode === 'production'
     },
     // Define global constants
     define: {
       __APP_ENV__: JSON.stringify(mode),
+      // Ensure React is in production mode when building for production
+      'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
     },
     // Optimize dependencies
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-router-dom'],
       // Force pre-bundling of common dependencies
       force: mode === 'development',
+      // Enable esbuild optimizations
+      esbuildOptions: {
+        // Enable production optimizations in production
+        define: {
+          global: 'globalThis',
+        },
+      },
     },
     // Cache configuration
     cacheDir: `./node_modules/.vite`,

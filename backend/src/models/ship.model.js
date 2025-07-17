@@ -67,7 +67,7 @@ const shipSchema = new mongoose.Schema(
     status: {
       type: String,
       required: [true, 'Please add status'],
-      enum: ['docked', 'arriving', 'delayed'],
+      enum: ['docked', 'arriving', 'delayed', 'active', 'inactive', 'maintenance'],
       default: 'active',
     },
     company: {
