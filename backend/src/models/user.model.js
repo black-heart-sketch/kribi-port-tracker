@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema(
         'port_authority',
         'viewer',
       ],
-      default: 'viewer',
+      default: 'admin',
     },
     password: {
       type: String,
