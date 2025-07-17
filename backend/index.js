@@ -17,13 +17,36 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Enable CORS for all routes
-app.use(cors({
-  origin:[ 'http://localhost:8080','https://kribi-port-tracker.onrender.com'],
+// Enhanced CORS configuration with logging
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = ['http://localhost:8081', 'https://kribi-port-tracker.onrender.com'];
+    
+    // Log all CORS requests
+    console.log(`[CORS] Request from origin: ${origin || 'No origin (e.g., same-origin)'}`);
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('[CORS] Allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log(`[CORS] Allowed origin: ${origin}`);
+      callback(null, true);
+    } else {
+      console.error(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+  credentials: true,
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+};
+
+// Enable CORS with the above configuration
+app.use(cors(corsOptions));
 
 // Body parser
 app.use(express.json());
