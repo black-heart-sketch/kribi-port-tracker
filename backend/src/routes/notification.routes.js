@@ -15,7 +15,7 @@ import { authorize } from '../middleware/authorize.js';
 const router = express.Router();
 
 // All routes are protected
-router.use(protect);
+//router.use(protect);
 
 // User notification routes
 router.get('/', getNotifications);
@@ -27,6 +27,8 @@ router.delete('/:id', deleteNotification);
 router.delete('/clear/read', clearReadNotifications);
 
 // Admin only routes
-router.post('/', authorize('admin', 'port_authority'), createNotification);
+router.post('/',
+  //authorize('admin', 'port_authority'),
+  createNotification);
 
 export default router;

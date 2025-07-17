@@ -84,6 +84,25 @@ export const login = asyncHandler(async (req, res, next) => {
   sendTokenResponse(user, 200, res);
 });
 
+// @desc    Check if email is available
+// @route   GET /api/auth/check-email
+// @access  Public
+export const checkEmailAvailability = asyncHandler(async (req, res, next) => {
+  const { email } = req.query;
+
+  if (!email) {
+    return next(new ErrorResponse('Email is required', 400));
+  }
+
+  // Check if email exists
+  const user = await User.findOne({ email }).select('_id');
+  
+  res.status(200).json({
+    success: true,
+    available: !user
+  });
+});
+
 // @desc    Logout user / clear cookie
 // @route   GET /api/auth/logout
 // @access  Private

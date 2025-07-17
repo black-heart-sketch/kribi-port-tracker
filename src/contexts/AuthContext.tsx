@@ -1,17 +1,20 @@
 import { createContext, useContext, ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginSchema, signupSchema } from "@/lib/validations/auth";
+import api from "@/config/axios.config";
 
 export type User = {
   id: string;
   name: string;
   email: string;
+  role: string;
 };
 
 export type LoginFormData = {
   email: string;
   password: string;
   rememberMe?: boolean;
+  name?:string;
 };
 
 export type SignupFormData = {
@@ -29,6 +32,7 @@ type AuthContextType = {
   login: (data: LoginFormData) => Promise<void>;
   signup: (data: SignupFormData) => Promise<void>;
   logout: () => void;
+  getUserId: () => string | null;
 };
 
 
@@ -47,26 +51,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await api.post('/auth/login', data);
+      console.log('Login response:', response.data);
       
-      // In a real app, you would make an API call to your backend
-      const mockUser = {
-        id: "1",
-        name: data.email.split("@")[0],
-        email: data.email,
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      
-      if (data.rememberMe) {
-        localStorage.setItem("rememberedEmail", data.email);
-      } else {
-        localStorage.removeItem("rememberedEmail");
+      if (response.data && response.data.success) {
+        // Extract user data from the nested response.data.data
+        const responseData = response.data.data || {};
+        const token = response.data.token;
+        
+        const userData = {
+          id: responseData._id || responseData.id || '1',
+          name: responseData.name || data.name,
+          email: responseData.email || data.email,
+          role: responseData.role || 'viewer',
+          // Include any other user data you need
+          ...responseData
+        };
+        
+        if (token) {
+          localStorage.setItem('token', token);
+        }
+        
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        if (data.rememberMe) {
+          localStorage.setItem('rememberedEmail', userData.email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+        
+        console.log('User after login:', userData);
+        navigate('/dashboard');
       }
-      
-      navigate("/dashboard");
     } catch (error) {
       console.error("Login failed:", error);
       throw new Error("Failed to login. Please check your credentials.");
@@ -75,23 +92,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getUserId = () => {
+    return user?.id;
+  };
+
   const signup = async (data: SignupFormData) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await api.post('/auth/register', data);
+      console.log('Signup response:', response.data);
       
-      // In a real app, you would make an API call to your backend
-      const mockUser = {
-        id: "1",
-        name: data.name,
-        email: data.email,
-      };
+      if (response.data) {
+        const userData = {
+          id: response.data.id || '1',
+          name: data.name,
+          email: data.email,
+          role: response.data.role || 'viewer', // Default to 'viewer' if role not provided
+        };
       
-      setUser(mockUser);
-      localStorage.setItem("user", JSON.stringify(mockUser));
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
       
-      navigate("/dashboard");
+      console.log('User after signup:', userData);
+      navigate('/dashboard');
+      }
     } catch (error) {
       console.error("Signup failed:", error);
       throw new Error("Failed to create an account. Please try again.");
@@ -115,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         logout,
+        getUserId,
       }}
     >
       {children}

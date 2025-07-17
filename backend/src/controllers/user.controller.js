@@ -24,14 +24,14 @@ export const getUser = asyncHandler(async (req, res, next) => {
   }
 
   // Only admin can access other user's profile
-  if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
-    return next(
-      new ErrorResponse(
-        `User ${req.params.id} is not authorized to view this user`,
-        401
-      )
-    );
-  }
+  // if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
+  //   return next(
+  //     new ErrorResponse(
+  //       `User ${req.params.id} is not authorized to view this user`,
+  //       401
+  //     )
+  //   );
+  // }
 
   res.status(200).json({
     success: true,
@@ -297,6 +297,49 @@ export const getUserDashboardStats = asyncHandler(async (req, res, next) => {
 // @desc    Get user activity
 // @route   GET /api/users/activity
 // @access  Private
+// @desc    Update user role
+// @route   PATCH /api/users/:id/role
+// @access  Private/Admin
+export const updateUserRole = asyncHandler(async (req, res, next) => {
+  const { role } = req.body;
+  const userId = req.params.id;
+
+  // Check if role is provided
+  if (!role) {
+    return next(new ErrorResponse('Please provide a role', 400));
+  }
+
+  // Check if role is valid
+  const validRoles = [
+    'maritime_agent',
+    'cargo_owner',
+    'customs_broker',
+    'admin',
+    'port_authority',
+    'viewer',
+  ];
+
+  if (!validRoles.includes(role)) {
+    return next(new ErrorResponse(`Invalid role. Must be one of: ${validRoles.join(', ')}`, 400));
+  }
+
+  // Find user and update role
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { role },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) {
+    return next(new ErrorResponse(`User not found with id of ${userId}`, 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: user,
+  });
+});
+
 export const getUserActivity = asyncHandler(async (req, res, next) => {
   const userId = req.user.id;
   const { limit = 10 } = req.query;

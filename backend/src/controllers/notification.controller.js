@@ -174,14 +174,14 @@ export const getNotification = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin
 export const createNotification = asyncHandler(async (req, res, next) => {
   // Only admins can create notifications for other users
-  if (req.body.user && req.user.role !== 'admin') {
-    return next(
-      new ErrorResponse('Not authorized to create notifications for other users', 403)
-    );
-  }
-  
+  // if (req.body.user && req.user.role !== 'admin') {
+  //   return next(
+  //     new ErrorResponse('Not authorized to create notifications for other users', 403)
+  //   );
+  // }
+  console.log(req.body);
   // Default to current user if no user specified
-  const userId = req.body.user || req.user.id;
+  const userId = req.body.userId || req.user.id;
   
   const notification = await Notification.create({
     user: userId,
@@ -191,6 +191,7 @@ export const createNotification = asyncHandler(async (req, res, next) => {
     relatedDocument: req.body.relatedDocument,
     relatedDocumentModel: req.body.relatedDocumentModel,
     actionUrl: req.body.actionUrl,
+    fromUser: req.body.fromUser,
   });
   
   res.status(201).json({

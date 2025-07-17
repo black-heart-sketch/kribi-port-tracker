@@ -8,14 +8,20 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import Ships from "./pages/Ships";
+import Shipes from "./pages/Ships";
 import Berthing from "./pages/Berthing";
-import Login from "./pages/Login";
+import CurrentBerthings from './pages/CurrentBerthings';
+import BerthingRequests from './pages/berthing/BerthingRequests';
+import Login from './pages/Login';
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import { useEffect } from "react";
+import Docks from "./pages/admin/port/Docks";
+import Ships from "./pages/admin/port/Ships";
+import UsersManagement from "./pages/admin/users";
+import UserDetails from "./pages/admin/users/UserDetails";
 
 // Protected Route Component
 type ProtectedRouteProps = {
@@ -65,6 +71,8 @@ const AppContent = () => {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Index />} />
+          <Route path="/berthing/current" element={<CurrentBerthings />} />
+          <Route path="/berthing/requests" element={<BerthingRequests />} />
           
           {/* Auth routes */}
           <Route
@@ -110,10 +118,18 @@ const AppContent = () => {
             }
           />
           <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/ships"
             element={
               <ProtectedRoute>
-                <Ships />
+                <Shipes />
               </ProtectedRoute>
             }
           />
@@ -126,18 +142,52 @@ const AppContent = () => {
             }
           />
           <Route
-            path="/cargo"
+            path="/berthing/new"
+            element={
+              <ProtectedRoute>
+                <Berthing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/berthing/my-requests"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
             }
           />
+
+          {/* Admin Routes */}
           <Route
-            path="/users"
+            path="/admin/port/docks"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Docks />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/port/ships"
+            element={
+              <ProtectedRoute>
+                <Ships />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <UsersManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users/:userId"
+            element={
+              <ProtectedRoute>
+                <UserDetails />
               </ProtectedRoute>
             }
           />

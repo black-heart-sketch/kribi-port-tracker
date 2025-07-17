@@ -1,41 +1,98 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Ship, Anchor, Package, TrendingUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import shipService from '@/services/ships.service';
+import dockService from '@/services/dock.service';
 
 const DashboardStats = () => {
-  const stats = [
+  const [stats, setStats] = useState([
     {
-      title: "Ships Docked",
-      value: "12",
-      description: "Currently in port",
+      title: "Active Ships",
+      value: "0",
+      description: "Currently active",
       icon: Ship,
-      trend: "+2 from yesterday",
-      color: "text-primary"
+      trend: "",
+      color: "text-primary",
+      type: 'ships'
     },
     {
-      title: "Active Berthings",
-      value: "8",
-      description: "Pending approval",
+      title: "Available Docks",
+      value: "0",
+      description: "Ready for berthing",
       icon: Anchor,
-      trend: "+1 this week",
-      color: "text-accent"
+      trend: "",
+      color: "text-accent",
+      type: 'docks'
     },
     {
       title: "Cargo Processed",
-      value: "2,847",
+      value: "0",
       description: "Tons this month",
       icon: Package,
-      trend: "+12% from last month",
-      color: "text-success"
+      trend: "",
+      color: "text-success",
+      type: 'cargo'
     },
     {
       title: "Port Efficiency",
-      value: "94%",
+      value: "0%",
       description: "Dock utilization",
       icon: TrendingUp,
-      trend: "+3% improvement",
-      color: "text-warning"
+      trend: "",
+      color: "text-warning",
+      type: 'efficiency'
     }
-  ];
+  ]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Fetch ships
+        const ships = await shipService.getShips();
+        const shipsActive = ships.filter(ship => ship.status === 'active').length;
+        
+        // Fetch docks
+        const docks = await dockService.getDocks();
+        const availableDocks = docks.filter(dock => dock.status === 'available').length;
+        const totalDocks = docks.length;
+        
+        // Calculate efficiency
+        const occupiedDocks = totalDocks - availableDocks;
+        const efficiency = ((occupiedDocks / totalDocks) * 100).toFixed(1);
+        const efficiencyNumber = parseFloat(efficiency);
+        
+        // Update stats
+        setStats(prev => prev.map(stat => {
+          switch(stat.type) {
+            case 'ships':
+              return {
+                ...stat,
+                value: shipsActive.toString(),
+                trend: shipsActive > 0 ? `${shipsActive} ships active` : "No active ships"
+              };
+            case 'docks':
+              return {
+                ...stat,
+                value: availableDocks.toString(),
+                trend: availableDocks > 0 ? `${availableDocks} docks available` : "All docks occupied"
+              };
+            case 'efficiency':
+              return {
+                ...stat,
+                value: `${efficiency}%`,
+                trend: efficiencyNumber >= 80 ? "High utilization" : efficiencyNumber >= 60 ? "Moderate utilization" : "Low utilization"
+              };
+            default:
+              return stat;
+          }
+        }));
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

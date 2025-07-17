@@ -41,6 +41,10 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       enum: ['Berthing', 'Cargo'],
     },
+    fromUser: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+    },
     actionUrl: String, // URL to navigate to when notification is clicked
   },
   {

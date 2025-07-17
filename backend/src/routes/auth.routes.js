@@ -8,6 +8,7 @@ import {
   resetPassword,
   updateDetails,
   updatePassword,
+  checkEmailAvailability,
 } from '../controllers/auth.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/authorize.js';
@@ -19,6 +20,7 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/forgotpassword', forgotPassword);
 router.put('/resetpassword/:resettoken', resetPassword);
+router.get('/check-email', checkEmailAvailability);
 
 // Protected routes
 router.use(protect);

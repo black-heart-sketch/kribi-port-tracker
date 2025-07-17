@@ -11,28 +11,62 @@ import sendEmail from '../utils/email.js';
 // @route   POST /api/berthings
 // @access  Private/Maritime Agent
 export const createBerthing = asyncHandler(async (req, res, next) => {
+  console.log(req.body)
+  // Get form data
+  const {
+    ship:shipId,
+    dock: dockId,
+    arrivalDate,
+    departureDate,
+    specialRequirements,
+    cargoDetails,
+    createdBy,
+  } = req.body;
+
+  // Parse cargoDetails if it's a string (from FormData)
+  const parsedCargoDetails = typeof cargoDetails === 'string' 
+    ? JSON.parse(cargoDetails) 
+    : cargoDetails;
+
+  // Get uploaded files
+  const documents = req.files?.documents?.map(file => ({
+    filename: file.filename,
+    path: file.path,
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+  })) || [];
+
   // Check if the dock is available
-  const dock = await Dock.findById(req.body.dock);
+  const dock = await Dock.findById(dockId);
   if (!dock) {
-    return next(new ErrorResponse(`No dock found with id ${req.body.dock}`, 404));
+    return next(new ErrorResponse(`No dock found with id ${dockId}`, 404));
   }
 
   // Check if the dock is available
   if (dock.status === 'occupied') {
+    console.log('The selected dock is currently occupied');
     return next(new ErrorResponse('The selected dock is currently occupied', 400));
   }
 
   // Check if the ship exists
-  const ship = await Ship.findById(req.body.ship);
+  const ship = await Ship.findById(shipId);
   if (!ship) {
-    return next(new ErrorResponse(`No ship found with id ${req.body.ship}`, 404));
+    return next(new ErrorResponse(`No ship found with id ${ship}`, 404));
   }
 
-  // Set the user who created the berthing
-  req.body.createdBy = req.user.id;
-
   // Create berthing
-  const berthing = await Berthing.create(req.body);
+  const berthing = await Berthing.create({
+    ship,
+    dock: dockId,
+    arrivalDate,
+    departureDate,
+    specialRequirements,
+    cargoDetails: parsedCargoDetails,
+    documents,
+    status: 'pending',
+    createdBy: createdBy,
+  });
 
   // Update dock status to occupied
   dock.status = 'occupied';
@@ -56,23 +90,23 @@ export const createBerthing = asyncHandler(async (req, res, next) => {
   await Promise.all(notificationPromises);
 
   // Send email notification to admins
-  const emailPromises = admins.map(admin => {
-    const email = new Email(admin, {
-      firstName: admin.name,
-      url: `${req.protocol}://${req.get('host')}/admin/berthings/${berthing._id}`,
-      berthing: {
-        ...berthing.toObject(),
-        ship: ship.toObject(),
-        dock: dock.toObject()
-      }
-    });
+  // const emailPromises = admins.map(admin => {
+  //   const email = new Email(admin, {
+  //     firstName: admin.name,
+  //     url: `${req.protocol}://${req.get('host')}/admin/berthings/${berthing._id}`,
+  //     berthing: {
+  //       ...berthing.toObject(),
+  //       ship: ship.toObject(),
+  //       dock: dock.toObject()
+  //     }
+  //   });
 
-    return email.sendBerthingNotification();
-  });
+  //   return email.sendBerthingNotification();
+  // });
 
   // Don't await email sending to avoid blocking the response
-  Promise.all(emailPromises).catch(console.error);
-
+  // Promise.all(emailPromises).catch(console.error);
+console.log('Berthing created successfully');
   res.status(201).json({
     success: true,
     data: berthing,
@@ -83,83 +117,13 @@ export const createBerthing = asyncHandler(async (req, res, next) => {
 // @route   GET /api/berthings
 // @access  Private
 export const getBerthings = asyncHandler(async (req, res, next) => {
-  // Copy req.query
-  const reqQuery = { ...req.query };
-
-  // Fields to exclude
-  const removeFields = ['select', 'sort', 'page', 'limit'];
-
-  // Loop over removeFields and delete them from reqQuery
-  removeFields.forEach(param => delete reqQuery[param]);
-
-  // Create query string
-  let queryStr = JSON.stringify(reqQuery);
-
-  // Create operators ($gt, $gte, etc)
-  queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
-
   // Finding resource
-  let query = Berthing.find(JSON.parse(queryStr))
-    .populate({
-      path: 'ship',
-      select: 'name imoNumber type company photo',
-    })
-    .populate({
-      path: 'dock',
-      select: 'name location status',
-    })
-    .populate({
-      path: 'createdBy',
-      select: 'name email company',
-    });
-
-  // Select Fields
-  if (req.query.select) {
-    const fields = req.query.select.split(',').join(' ');
-    query = query.select(fields);
-  }
-
-  // Sort
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(',').join(' ');
-    query = query.sort(sortBy);
-  } else {
-    query = query.sort('-createdAt');
-  }
-
-  // Pagination
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 25;
-  const startIndex = (page - 1) * limit;
-  const endIndex = page * limit;
-  const total = await Berthing.countDocuments(JSON.parse(queryStr));
-
-  query = query.skip(startIndex).limit(limit);
-
-  // Executing query
-  const berthings = await query;
-
-  // Pagination result
-  const pagination = {};
-
-  if (endIndex < total) {
-    pagination.next = {
-      page: page + 1,
-      limit,
-    };
-  }
-
-  if (startIndex > 0) {
-    pagination.prev = {
-      page: page - 1,
-      limit,
-    };
-  }
-
+  let berthings =await Berthing.find().populate('ship').populate('dock').populate('createdBy')
+  .populate('approvedBy')
+console.log(berthings)
   res.status(200).json({
     success: true,
     count: berthings.length,
-    pagination,
     data: berthings,
   });
 });
@@ -239,28 +203,35 @@ export const updateBerthing = asyncHandler(async (req, res, next) => {
     );
   }
 
+  const currentDate = new Date();
+
   // Make sure user is authorized to update this berthing
-  if (
-    berthing.createdBy.toString() !== req.user.id &&
-    req.user.role !== 'admin' &&
-    req.user.role !== 'port_authority'
-  ) {
-    return next(
-      new ErrorResponse(
-        `User not authorized to update this berthing`,
-        401
-      )
-    );
-  }
+  // if (
+  //   berthing.createdBy.toString() !== req.user.id &&
+  //   req.user.role !== 'admin' &&
+  //   req.user.role !== 'port_authority'
+  // ) {
+  //   return next(
+  //     new ErrorResponse(
+  //       `User not authorized to update this berthing`,
+  //       401
+  //     )
+  //   );
+  // }
 
   // If status is being updated to approved, set approvedBy
   if (req.body.status === 'approved' && !berthing.approvedBy) {
-    req.body.approvedBy = req.user.id;
+    console.log(req.body)
+    req.body.approvedBy = req.body.userId;
   }
+  
 
   // If status is being updated to completed, free up the dock
   if (req.body.status === 'completed') {
-    await Dock.findByIdAndUpdate(berthing.dock, { status: 'available' });
+    await Dock.findByIdAndUpdate(berthing.dock, { status: 'available',rejectedBy: req.body.userId });
+  }
+  if (req.body.status === 'rejected') {
+    await Dock.findByIdAndUpdate(berthing.dock, { status: 'available',rejectedBy: req.body.userId });
   }
 
   berthing = await Berthing.findByIdAndUpdate(req.params.id, req.body, {
@@ -380,9 +351,10 @@ export const approveBerthing = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/berthings/:id/reject
 // @access  Private/Admin
 export const rejectBerthing = asyncHandler(async (req, res, next) => {
-  const { rejectionReason } = req.body;
+  const { reason } = req.body.reason;
+  const { userId } = req.body.reason;
   
-  if (!rejectionReason) {
+  if (!reason) {
     return next(
       new ErrorResponse('Please provide a reason for rejection', 400)
     );
@@ -407,7 +379,8 @@ export const rejectBerthing = asyncHandler(async (req, res, next) => {
 
   // Update berthing status and set rejection reason
   berthing.status = 'rejected';
-  berthing.rejectionReason = rejectionReason;
+  berthing.rejectionReason = reason;
+  berthing.rejectedBy = userId;
   
   // Free up the dock
   await Dock.findByIdAndUpdate(berthing.dock, { status: 'available' });
@@ -420,7 +393,7 @@ export const rejectBerthing = asyncHandler(async (req, res, next) => {
     await Notification.create({
       user: creator._id,
       title: 'Berthing Rejected',
-      message: `Your berthing request has been rejected. Reason: ${rejectionReason}`,
+      message: `Your berthing request has been rejected. Reason: ${reason}`,
       type: 'berthing_rejected',
       relatedDocument: berthing._id,
       relatedDocumentModel: 'Berthing',
@@ -634,5 +607,18 @@ export const getBerthingStats = asyncHandler(async (req, res, next) => {
       statusCount,
       shipTypeCount,
     },
+  });
+});
+
+export const getAvailableBerthings = asyncHandler(async (req, res, next) => {
+  const berthings = await Berthing.find({
+    status: 'available',
+    operationalStatus: 'operational'
+  })
+  
+  res.status(200).json({
+    success: true,
+    count: berthings.length,
+    data: berthings
   });
 });

@@ -1,22 +1,32 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { FormInput } from "@/components/auth/FormInput";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { loginSchema } from "@/lib/validations/auth";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth, type LoginFormData } from "@/contexts/AuthContext";
-import { Anchor } from "lucide-react";
+import { Anchor, Eye, EyeOff, Loader2 } from "lucide-react";
+import authService from "@/services/auth.service";
 
 const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
-  
-  // Get the previous location or default to dashboard
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
 
   type FormValues = {
@@ -32,28 +42,27 @@ const Login = () => {
       password: "",
       rememberMe: false,
     },
+    mode: "onTouched",
   });
 
   const onSubmit = async (formData: FormValues) => {
+    setIsLoading(true);
     try {
-      const loginData: LoginFormData = {
-        email: formData.email,
-        password: formData.password,
-        rememberMe: formData.rememberMe,
-      };
+      await login(formData); // Using the login function from AuthContext
       
-      await login(loginData);
       toast({
-        title: "Login successful",
-        description: "Welcome back!",
+        title: "Login Successful",
+        description: "Welcome back! Redirecting you now...",
       });
       navigate(from, { replace: true });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred",
+        title: "Login Failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -75,36 +84,69 @@ const Login = () => {
         <div className="bg-card p-8 rounded-xl shadow-sm border">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="space-y-4">
-                <FormInput
-                  name="email"
-                  label="Email"
-                  type="email"
-                  placeholder="name@example.com"
-                  error={form.formState.errors.email?.message}
-                />
-                <FormInput
-                  name="password"
-                  label="Password"
-                  type="password"
-                  placeholder="••••••••"
-                  error={form.formState.errors.password?.message}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="name@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          {...field}
+                        />
+                      </FormControl>
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="rememberMe"
-                    {...form.register("rememberMe")}
-                  />
-                  <label
-                    htmlFor="rememberMe"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Remember me
-                  </label>
-                </div>
+                <FormField
+                  control={form.control}
+                  name="rememberMe"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-medium">
+                        Remember me
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
                 <Link
                   to="/forgot-password"
                   className="text-sm font-medium text-primary hover:underline"
@@ -113,8 +155,15 @@ const Login = () => {
                 </Link>
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
-                Sign in
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
               </Button>
             </form>
           </Form>

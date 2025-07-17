@@ -73,7 +73,7 @@ const berthingSchema = new mongoose.Schema(
         owner: {
           type: mongoose.Schema.ObjectId,
           ref: 'User',
-          required: [true, 'Please specify cargo owner'],
+          required: [false, 'Please specify cargo owner'],
         },
         customsStatus: {
           type: String,
@@ -103,6 +103,10 @@ const berthingSchema = new mongoose.Schema(
       required: true,
     },
     approvedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+    },
+    rejectedBy: {
       type: mongoose.Schema.ObjectId,
       ref: 'User',
     },

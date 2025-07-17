@@ -15,6 +15,14 @@ const shipSchema = new mongoose.Schema(
       trim: true,
       maxlength: [15, 'IMO number cannot be more than 15 characters'],
     },
+    mmsiNumber: {
+      type: String,
+      trim: true,
+    },
+    flag: {
+      type: String,
+      required: [true, 'Please add flag state'],
+    },
     type: {
       type: String,
       required: [true, 'Please specify the ship type'],
@@ -28,6 +36,40 @@ const shipSchema = new mongoose.Schema(
         'other',
       ],
     },
+    length: {
+      type: Number,
+      required: [true, 'Please add ship length in meters'],
+    },
+    beam: {
+      type: Number,
+      required: [true, 'Please add ship beam in meters'],
+    },
+    draft: {
+      type: Number,
+      required: [true, 'Please add ship draft in meters'],
+    },
+    grossTonnage: {
+      type: Number,
+      required: [true, 'Please add gross tonnage'],
+    },
+    netTonnage: {
+      type: Number,
+      required: [true, 'Please add net tonnage'],
+    },
+    yearBuilt: {
+      type: Number,
+      required: [true, 'Please add year built'],
+    },
+    owner: {
+      type: String,
+      required: [true, 'Please add owner information'],
+    },
+    status: {
+      type: String,
+      required: [true, 'Please add status'],
+      enum: ['docked', 'arriving', 'delayed'],
+      default: 'active',
+    },
     company: {
       type: String,
       required: [true, 'Please add a shipping company'],
@@ -36,17 +78,9 @@ const shipSchema = new mongoose.Schema(
       type: String,
       default: 'no-photo.jpg',
     },
-    length: {
-      type: Number,
-      required: [true, 'Please add ship length in meters'],
-    },
-    grossTonnage: {
-      type: Number,
-      required: [true, 'Please add gross tonnage'],
-    },
-    flag: {
+    createdBy: {
       type: String,
-      required: [true, 'Please add flag state'],
+      required: [true, 'Please specify who created this record'],
     },
   },
   {

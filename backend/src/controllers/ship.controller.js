@@ -2,12 +2,36 @@ import Ship from '../models/ship.model.js';
 import ErrorResponse from '../utils/errorResponse.js';
 import { asyncHandler } from '../middleware/async.middleware.js';
 import path from 'path';
+import ShipModel from '../models/ship.model.js';
 
 // @desc    Get all ships
 // @route   GET /api/ships
 // @access  Private
 export const getShips = asyncHandler(async (req, res, next) => {
-  res.status(200).json(res.advancedResults);
+ const ships=await ShipModel.find();
+  console.log(ships);
+  res.status(200).json({
+    success: true,
+    count: ships.length,
+    data: ships
+  });
+});
+
+// @desc    Get available ships
+// @route   GET /api/ships/available
+// @access  Private
+export const getAvailableShips = asyncHandler(async (req, res, next) => {
+  // Find ships that are not currently in an active berthing
+ 
+  const ships = await Ship.find({
+    status: 'active'
+  });
+  
+  res.status(200).json({
+    success: true,
+    count: ships.length,
+    data: ships
+  });
 });
 
 // @desc    Get single ship
@@ -49,9 +73,8 @@ export const createShip = asyncHandler(async (req, res, next) => {
       )
     );
   }
-
+console.log(req.body);
   // Add user to req.body
-  req.body.createdBy = req.user.id;
 
   const ship = await Ship.create(req.body);
 
@@ -87,18 +110,7 @@ export const updateShip = asyncHandler(async (req, res, next) => {
   }
 
   // Make sure user is ship owner or admin
-  if (
-    ship.createdBy.toString() !== req.user.id &&
-    req.user.role !== 'admin' &&
-    req.user.role !== 'port_authority'
-  ) {
-    return next(
-      new ErrorResponse(
-        `User ${req.user.id} is not authorized to update this ship`,
-        401
-      )
-    );
-  }
+  
 
   ship = await Ship.findByIdAndUpdate(req.params.id, req.body, {
     new: true,

@@ -1,12 +1,35 @@
 import Dock from '../models/dock.model.js';
 import ErrorResponse from '../utils/errorResponse.js';
 import { asyncHandler } from '../middleware/async.middleware.js';
+import Docks from '../models/dock.model.js';
 
 // @desc    Get all docks
 // @route   GET /api/docks
 // @access  Private
 export const getDocks = asyncHandler(async (req, res, next) => {
-  res.status(200).json(res.advancedResults);
+  const docks=await Docks.find();
+  // console.log(docks);
+  res.status(200).json({
+    success: true,
+    count: docks.length,
+    data: docks
+  });
+});
+
+// @desc    Get available docks
+// @route   GET /api/docks/available
+// @access  Private
+export const getAvailableDocks = asyncHandler(async (req, res, next) => {
+  // Find docks that are not currently occupied and have status 'active'
+  const docks = await Dock.find({
+    status: 'available',
+  })
+  
+  res.status(200).json({
+    success: true,
+    count: docks.length,
+    data: docks
+  });
 });
 
 // @desc    Get single dock
@@ -66,23 +89,7 @@ export const updateDock = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Prevent updating status if dock is occupied
-  if (req.body.status && dock.status === 'occupied' && req.body.status !== 'occupied') {
-    // Check if there are any active berthings for this dock
-    const activeBerthings = await Berthing.countDocuments({
-      dock: dock._id,
-      status: { $in: ['pending', 'approved'] },
-    });
-
-    if (activeBerthings > 0) {
-      return next(
-        new ErrorResponse(
-          'Cannot change status of a dock with active berthings',
-          400
-        )
-      );
-    }
-  }
+ 
 
   dock = await Dock.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
@@ -129,81 +136,7 @@ export const deleteDock = asyncHandler(async (req, res, next) => {
 // @desc    Get available docks
 // @route   GET /api/docks/available
 // @access  Private
-export const getAvailableDocks = asyncHandler(async (req, res, next) => {
-  const { startDate, endDate, minLength, minDraft } = req.query;
 
-  // Validate dates
-  if (!startDate || !endDate) {
-    return next(
-      new ErrorResponse('Please provide both start and end dates', 400)
-    );
-  }
-
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    return next(new ErrorResponse('Invalid date format', 400));
-  }
-
-  if (start >= end) {
-    return next(
-      new ErrorResponse('End date must be after start date', 400)
-    );
-  }
-
-  // Find docks that are available or in maintenance
-  let query = {
-    status: { $in: ['available', 'maintenance'] },
-  };
-
-  // Filter by minimum length if provided
-  if (minLength) {
-    query.length = { $gte: Number(minLength) };
-  }
-
-  // Filter by minimum draft if provided
-  if (minDraft) {
-    query.maxDraft = { $gte: Number(minDraft) };
-  }
-
-  // Find all docks that match the initial criteria
-  const allDocks = await Dock.find(query);
-
-  // Find docks that have conflicting berthings
-  const conflictingDocks = await Berthing.find({
-    dock: { $in: allDocks.map(dock => dock._id) },
-    $or: [
-      {
-        // Case 1: New booking starts during an existing booking
-        arrivalDate: { $lt: end },
-        departureDate: { $gt: start },
-      },
-      {
-        // Case 2: New booking ends during an existing booking
-        arrivalDate: { $lt: end },
-        departureDate: { $gt: start },
-      },
-      {
-        // Case 3: New booking completely contains an existing booking
-        arrivalDate: { $gte: start },
-        departureDate: { $lte: end },
-      },
-    ],
-    status: { $in: ['pending', 'approved'] },
-  }).distinct('dock');
-
-  // Filter out docks with conflicting berthings
-  const availableDocks = allDocks.filter(
-    dock => !conflictingDocks.some(conflict => conflict.equals(dock._id))
-  );
-
-  res.status(200).json({
-    success: true,
-    count: availableDocks.length,
-    data: availableDocks,
-  });
-});
 
 // @desc    Get dock utilization statistics
 // @route   GET /api/docks/utilization

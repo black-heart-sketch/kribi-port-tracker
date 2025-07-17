@@ -11,18 +11,21 @@ import {
   getUserCargo,
   updateCargoStatus,
   getBerthingStats,
+  getAvailableBerthings,
 } from '../controllers/berthing.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize, checkCargoOwnership } from '../middleware/authorize.js';
+import { uploadBerthingFiles } from '../middleware/upload.middleware.js';
 import advancedResults from '../middleware/advancedResults.js';
 import Berthing from '../models/berthing.model.js';
 
 const router = express.Router();
 
 // All routes are protected
-router.use(protect);
+//router.use(protect);
 
 // Public routes (no authentication required for public data)
+router.get('/available', getAvailableBerthings);
 router.get(
   '/public',
   (req, res, next) => {
@@ -54,19 +57,21 @@ router.get('/:id', getBerthing);
 // Routes for maritime agents
 router.post(
   '/',
-  authorize('maritime_agent', 'admin', 'port_authority'),
+  // protect,
+  // authorize('maritime_agent', 'admin'),
+  uploadBerthingFiles,
   createBerthing
 );
 
 router.put(
   '/:id',
-  authorize('maritime_agent', 'admin', 'port_authority'),
+  // authorize('maritime_agent', 'admin', 'port_authority'),
   updateBerthing
 );
 
 router.delete(
   '/:id',
-  authorize('maritime_agent', 'admin', 'port_authority'),
+  // authorize('maritime_agent', 'admin', 'port_authority'),
   deleteBerthing
 );
 
@@ -96,7 +101,7 @@ router.put(
 
 router.put(
   '/:id/reject',
-  authorize('admin', 'port_authority'),
+  // authorize('admin', 'port_authority'),
   rejectBerthing
 );
 
