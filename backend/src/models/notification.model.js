@@ -45,7 +45,15 @@ const notificationSchema = new mongoose.Schema(
       type: mongoose.Schema.ObjectId,
       ref: 'User',
     },
-    actionUrl: String, // URL to navigate to when notification is clicked
+    actionUrl: String, 
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,

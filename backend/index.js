@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 5001;
 
 // Enable CORS for all routes
 app.use(cors({
-  origin: 'http://localhost:8080',
+  origin:[ 'http://localhost:8080','https://kribi-port-tracker.onrender.com'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true

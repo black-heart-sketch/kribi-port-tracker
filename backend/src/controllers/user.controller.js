@@ -44,6 +44,7 @@ export const getUser = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin
 export const createUser = asyncHandler(async (req, res, next) => {
   // Check for existing user with same email
+  try {
   const existingUser = await User.findOne({ email: req.body.email });
   if (existingUser) {
     return next(
@@ -58,16 +59,20 @@ export const createUser = asyncHandler(async (req, res, next) => {
   const welcomeUrl = `${req.protocol}://${req.get('host')}/dashboard`;
   const message = `Welcome to Kribi Port Authority System!\n\nYour account has been created by an administrator.`;
   
-  try {
+ 
     await sendEmail({
       email: user.email,
       subject: 'Welcome to Kribi Port Authority',
       message,
     });
   } catch (err) {
+    console.log('Error sending:', err);
     console.error('Error sending welcome email:', err);
     // Don't fail the request if email sending fails
   }
+  console.log();
+  
+
 
   res.status(201).json({
     success: true,
