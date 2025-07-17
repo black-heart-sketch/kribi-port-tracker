@@ -16,10 +16,8 @@ export default defineConfig(({ mode }): UserConfig => {
       strictPort: false,
       open: true,
       cors: mode === 'development',
-      // Use type assertion to handle the string | RegExp array
-      allowedHosts: (mode === 'production' 
-        ? ['kribi-port-tracker.vercel.app']
-        : ['localhost', '6a893ef4415f.ngrok-free.app', '*.ngrok-free.app', 'kribi-port-tracker-bakend.onrender.com']) as string[],
+      // Allow access from any host
+      allowedHosts: true,
       // Enable CORS in development
     },
     plugins: [
