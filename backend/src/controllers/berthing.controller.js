@@ -120,7 +120,7 @@ export const getBerthings = asyncHandler(async (req, res, next) => {
   // Finding resource
   let berthings =await Berthing.find().populate('ship').populate('dock').populate('createdBy')
   .populate('approvedBy')
-console.log(berthings)
+// console.log(berthings)
   res.status(200).json({
     success: true,
     count: berthings.length,
@@ -435,28 +435,31 @@ export const getUserBerthings = asyncHandler(async (req, res, next) => {
 // @access  Private/Cargo Owner
 export const getUserCargo = asyncHandler(async (req, res, next) => {
   // Find all berthings where the user is listed as a cargo owner
+  console.log(req.query.userId);
   const berthings = await Berthing.find({
-    'cargoDetails.owner': req.user.id,
+    'cargoDetails.cargoOwnerId': req.query.userId,
   })
     .populate('ship', 'name imoNumber type')
     .populate('dock', 'name location')
     .populate({
       path: 'cargoDetails',
-      match: { owner: req.user.id },
+      match: { owner: req.query.userId },
       populate: {
         path: 'owner processedBy',
         select: 'name email company',
       },
     })
     .sort('-createdAt');
+    // console.log(berthings);
 
   // Filter and format the response to only include the user's cargo
   const userCargo = [];
   
   berthings.forEach(berthing => {
     const cargoItems = berthing.cargoDetails.filter(
-      cargo => cargo.owner && cargo.owner._id.toString() === req.user.id
+      cargo => cargo.cargoOwnerId && cargo.cargoOwnerId.toString() === req.query.userId
     );
+    console.log(cargoItems);
 
     if (cargoItems.length > 0) {
       userCargo.push({
@@ -470,6 +473,7 @@ export const getUserCargo = asyncHandler(async (req, res, next) => {
       });
     }
   });
+  console.log(userCargo); 
 
   res.status(200).json({
     success: true,

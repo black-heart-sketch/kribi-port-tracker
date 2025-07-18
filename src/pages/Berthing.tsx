@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/config/axios.config';
 import * as Toast from '@radix-ui/react-toast';
-import { X } from 'lucide-react';
+import { X, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import berthingService from '@/services/berthing.service';
+import userService from '@/services/user.service';
 
 const Berthing = () => {
   // UI State
@@ -31,6 +32,10 @@ const Berthing = () => {
   const [berthings, setBerthings] = useState<any[]>([]);
   const [ships, setShips] = useState<Array<{_id: string, name: string, imoNumber: string}>>([]);
   const [docks, setDocks] = useState<Array<{_id: string, name: string, status: string}>>([]);
+  const [cargoOwners, setCargoOwners] = useState<Array<{_id: string, name: string, email: string}>>([]);
+  const [filteredCargoOwners, setFilteredCargoOwners] = useState<Array<{_id: string, name: string, email: string}>>([]);
+  const [isOwnerDropdownOpen, setIsOwnerDropdownOpen] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Loading & Error States
   const [isLoading, setIsLoading] = useState(true);
@@ -124,7 +129,9 @@ const Berthing = () => {
       weight: '',
       quantity: 1,
       unit: 'TEU',
-      notes: ''
+      notes: '',
+      cargoOwnerId: '',
+      cargoOwnerName: ''
     }],
     documents: [] as File[],
     specialRequirements: ''
@@ -132,7 +139,34 @@ const Berthing = () => {
   
 
   
-  // Fetch ships and docks on component mount
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOwnerDropdownOpen(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Filter cargo owners based on search term
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredCargoOwners(cargoOwners);
+    } else {
+      const filtered = cargoOwners.filter(owner =>
+        owner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (owner.email && owner.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+      setFilteredCargoOwners(filtered);
+    }
+  }, [searchTerm, cargoOwners]);
+
+  // Fetch ships, docks, and cargo owners on dialog open
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -145,9 +179,17 @@ const Berthing = () => {
         const docksRes = await dockService.getAvailableDocks();
         console.log(docksRes);
         setDocks(docksRes);
+
+        // Fetch cargo owners
+        const response = await userService.getUsers();
+        console.log('here are the fetched users', response)
+        const cargoOwners = response.filter(user => user.role === 'cargo_owner');
+        console.log(cargoOwners)
+        setCargoOwners(cargoOwners);
+        setFilteredCargoOwners(cargoOwners);
       } catch (err) {
+        console.error('Error fetching data:', err);
         setError('Failed to load required data');
-        console.error(err);
       } finally {
         setIsLoading(false);
       }
@@ -157,6 +199,38 @@ const Berthing = () => {
       fetchData();
     }
   }, [isDialogOpen]);
+  
+  // Reset form when dialog is closed
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setFormData({
+        ship: '',
+        dock: '',
+        arrivalDate: {
+          date: undefined,
+          time: '08:00'
+        },
+        departureDate: {
+          date: undefined,
+          time: '17:00'
+        },
+        cargoDetails: [{
+          description: '',
+          type: '',
+          weight: '',
+          quantity: 1,
+          unit: 'TEU',
+          notes: '',
+          cargoOwnerId: '',
+          cargoOwnerName: ''
+        }],
+        documents: [],
+        specialRequirements: ''
+      });
+      setSearchTerm('');
+      setFilteredCargoOwners(cargoOwners);
+    }
+  }, [isDialogOpen, cargoOwners]);
   
   const addCargoItem = () => {
     setFormData(prev => ({
@@ -169,7 +243,9 @@ const Berthing = () => {
           weight: '',
           quantity: 1,
           unit: 'TEU',
-          notes: ''
+          notes: '',
+          cargoOwnerId: '',
+          cargoOwnerName: ''
         }
       ]
     }));
@@ -182,13 +258,29 @@ const Berthing = () => {
     }));
   };
   
-  const handleCargoChange = (index: number, field: string, value: any) => {
-    const updatedCargo = [...formData.cargoDetails];
-    updatedCargo[index] = { ...updatedCargo[index], [field]: value };
-    setFormData(prev => ({
-      ...prev,
-      cargoDetails: updatedCargo
-    }));
+  const handleCargoChange = (index: number, fieldOrUpdates: string | Record<string, any>, value?: any) => {
+    // If fieldOrUpdates is a string, it's the field name and value is the value
+    // Otherwise, it's an object of updates
+    const updates = typeof fieldOrUpdates === 'string' 
+      ? { [fieldOrUpdates]: value }
+      : fieldOrUpdates;
+      
+    console.log(`Updating cargo ${index} with:`, updates);
+    
+    setFormData(prev => {
+      const updatedCargo = [...prev.cargoDetails];
+      updatedCargo[index] = { 
+        ...updatedCargo[index],
+        ...updates 
+      };
+      
+      console.log('After update:', updatedCargo[index]);
+      
+      return {
+        ...prev,
+        cargoDetails: updatedCargo
+      };
+    });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -260,9 +352,15 @@ const Berthing = () => {
         arrivalDate: arrivalDateTime,
         departureDate: departureDateTime,
         specialRequirements: formData.specialRequirements || '',
-        cargoDetails: formData.cargoDetails,
+        cargoDetails: formData.cargoDetails.map(cargo => ({
+          ...cargo,
+          cargoOwnerId: cargo.cargoOwnerId,
+          cargoOwnerName: cargo.cargoOwnerName
+        })),
         createdBy: user?.id || ''
       };
+      
+      console.log('Submitting cargo details:', berthingData.cargoDetails);
 
       // Add all fields to formData
       Object.entries(berthingData).forEach(([key, value]) => {
@@ -440,6 +538,7 @@ const Berthing = () => {
                     <p>Type: {cargo.type}</p>
                     <p>Weight: {cargo.weight} {cargo.unit}</p>
                     <p>Quantity: {cargo.quantity}</p>
+                    {cargo.cargoOwnerId && <p>Owner ID: {cargo.cargoOwnerId}</p>}
                     {cargo.notes && <p className="text-muted-foreground">Notes: {cargo.notes}</p>}
                   </div>
                 ))
@@ -491,14 +590,9 @@ const Berthing = () => {
               View Details
             </Button>
             {berthing.status === 'pending' && (
-              <>
-                <Button size="sm" className="bg-success text-success-foreground">
-                  Approve
-                </Button>
-                <Button variant="destructive" size="sm">
-                  Reject
-                </Button>
-              </>
+              <Button size="sm" className="bg-success text-success-foreground">
+                send notification
+              </Button>
             )}
             {berthing.status === 'approved' && (
               <Button variant="outline" size="sm">
@@ -751,6 +845,72 @@ const Berthing = () => {
                               placeholder="Cargo description"
                               required
                             />
+                          </div>
+                          
+                          <div className="space-y-2 relative" ref={index === 0 ? dropdownRef : null}>
+                            <Label>Cargo Owner *</Label>
+                            <div className="relative">
+                              <div 
+                                className="flex items-center justify-between w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer"
+                                onClick={() => setIsOwnerDropdownOpen(isOwnerDropdownOpen === index ? null : index)}
+                              >
+                                <span className={cargo.cargoOwnerId ? 'text-foreground' : 'text-muted-foreground'}>
+                                  {cargo.cargoOwnerName || 'Select cargo owner'}
+                                </span>
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                              </div>
+                              {isOwnerDropdownOpen === index && (
+                                <div className="absolute z-10 w-full mt-1 bg-popover text-popover-foreground shadow-lg rounded-md border border-border overflow-auto max-h-60">
+                                  <div className="p-2 border-b border-border">
+                                    <Input
+                                      placeholder="Search cargo owner..."
+                                      value={searchTerm}
+                                      onChange={(e) => setSearchTerm(e.target.value)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="h-8"
+                                    />
+                                  </div>
+                                  <div className="py-1">
+                                    {filteredCargoOwners.length > 0 ? (
+                                      filteredCargoOwners.map((owner) => {
+                                        console.log('Owner object:', owner);
+                                        return (
+                                          <div
+                                            key={owner._id || owner.id}
+                                            className={`px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer flex items-center justify-between ${cargo.cargoOwnerId === (owner._id || owner.id) ? 'bg-accent' : ''}`}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              const ownerId = owner._id || owner.id;
+                                              console.log('Setting cargo owner:', { ownerId, name: owner.name });
+                                              handleCargoChange(index, {
+                                                cargoOwnerId: ownerId,
+                                                cargoOwnerName: owner.name
+                                              });
+                                              setSearchTerm('');
+                                              setIsOwnerDropdownOpen(null);
+                                            }}
+                                          >
+                                            <div>
+                                              <div className="font-medium">{owner.name}</div>
+                                              {owner.email && (
+                                                <div className="text-xs text-muted-foreground">{owner.email}</div>
+                                              )}
+                                            </div>
+                                            {cargo.cargoOwnerId === (owner._id || owner.id) && (
+                                              <Check className="h-4 w-4 text-primary" />
+                                            )}
+                                          </div>
+                                        );
+                                      })
+                                    ) : (
+                                      <div className="px-4 py-2 text-sm text-muted-foreground">
+                                        No cargo owners found
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           
                           <div className="space-y-2">

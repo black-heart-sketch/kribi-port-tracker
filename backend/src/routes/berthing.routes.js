@@ -76,7 +76,9 @@ router.delete(
 );
 
 // Routes for cargo owners - must come before /:id routes to avoid conflicts
-router.get('/user/cargo', authorize('cargo_owner'), getUserCargo);
+router.get('/user/cargo',
+   //authorize('cargo_owner'),
+    getUserCargo);
 
 // Routes for customs brokers - must come before /:id routes to avoid conflicts
 router.put(

@@ -20,19 +20,19 @@ const PORT = process.env.PORT || 5001;
 // Enhanced CORS configuration with logging
 const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = ['http://localhost:8081', 'https://kribi-port-tracker.onrender.com'];
+    const allowedOrigins = ['http://localhost:8080', 'https://kribi-port-tracker.onrender.com'];
     
     // Log all CORS requests
-    console.log(`[CORS] Request from origin: ${origin || 'No origin (e.g., same-origin)'}`);
+  //  console.log(`[CORS] Request from origin: ${origin || 'No origin (e.g., same-origin)'}`);
     
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
-      console.log('[CORS] Allowing request with no origin');
+     // console.log('[CORS] Allowing request with no origin');
       return callback(null, true);
     }
     
     if (allowedOrigins.includes(origin)) {
-      console.log(`[CORS] Allowed origin: ${origin}`);
+     // console.log(`[CORS] Allowed origin: ${origin}`);
       callback(null, true);
     } else {
       console.error(`[CORS] Blocked origin: ${origin}`);

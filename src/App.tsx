@@ -22,6 +22,9 @@ import Docks from "./pages/admin/port/Docks";
 import Ships from "./pages/admin/port/Ships";
 import UsersManagement from "./pages/admin/users";
 import UserDetails from "./pages/admin/users/UserDetails";
+import AdminDashboard from "./pages/admin/Dashboard";
+import MyCargo from "./pages/cargo/MyCargo";
+import CustomsClearance from "./pages/customs/CustomsClearance";
 
 // Protected Route Component
 type ProtectedRouteProps = {
@@ -118,6 +121,14 @@ const AppContent = () => {
             }
           />
           <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/profile"
             element={
               <ProtectedRoute>
@@ -188,6 +199,26 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <UserDetails />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Cargo Routes */}
+          <Route
+            path="/cargo/my-cargo"
+            element={
+              <ProtectedRoute>
+                <MyCargo />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Customs Routes */}
+          <Route
+            path="/customs/clearance"
+            element={
+              <ProtectedRoute>
+                <CustomsClearance />
               </ProtectedRoute>
             }
           />

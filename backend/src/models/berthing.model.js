@@ -70,14 +70,14 @@ const berthingSchema = new mongoose.Schema(
             'Please specify the unit',
           ],
         },
-        owner: {
+        cargoOwnerId: {
           type: mongoose.Schema.ObjectId,
           ref: 'User',
           required: [false, 'Please specify cargo owner'],
         },
         customsStatus: {
           type: String,
-          enum: ['not_verified', 'in_progress', 'cleared', 'held'],
+          enum: ['not_verified', 'in_progress', 'cleared', 'held','verified'],
           default: 'not_verified',
         },
         processedBy: {

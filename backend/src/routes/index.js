@@ -5,6 +5,8 @@ import shipRoutes from './ship.routes.js';
 import dockRoutes from './dock.routes.js';
 import notificationRoutes from './notification.routes.js';
 import userRoutes from './user.routes.js';
+import customsRoutes from './customs.routes.js';
+import dashboardRoutes from './dashboard.routes.js';
 
 const router = Router();
 
@@ -24,6 +26,8 @@ router.use('/ships', shipRoutes);
 router.use('/docks', dockRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/users', userRoutes);
+router.use('/customs', customsRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 //Catch-all for undefined API routes
 // router.all('/*', (req, res) => {

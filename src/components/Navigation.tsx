@@ -99,7 +99,6 @@ const Navigation = () => {
       icon: List,
       roles: ['maritime_agent'],
     },
-
     // Cargo Owner routes
     {
       href: '/cargo/my-cargo',

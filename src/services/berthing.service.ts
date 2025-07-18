@@ -11,6 +11,8 @@ export interface CargoDetail {
   quantity: number;
   unit: string;
   notes?: string;
+  cargoOwnerId?: string;
+  cargoOwnerName?: string;
   status?: 'pending' | 'in_transit' | 'delivered' | 'cancelled';
 }
 
