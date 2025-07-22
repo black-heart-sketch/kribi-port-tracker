@@ -71,9 +71,9 @@ export const berthingService = {
   },
 
   // Get all berthings (with optional filters)
-  async getBerthings(params?: Record<string, any>): Promise<{ data: Berthing[], pagination: any }> {
+  async getBerthings(): Promise<Berthing[]> {
     try {
-      const response = await axiosInstance.get(BERTHING_ENDPOINT, { params });
+      const response = await axiosInstance.get(BERTHING_ENDPOINT);
       console.log('here is',response.data)
       return response.data.data;
     } catch (error) {

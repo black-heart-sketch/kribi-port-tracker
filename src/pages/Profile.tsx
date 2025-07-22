@@ -4,13 +4,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { User, Mail, Phone, Building, Lock, Save, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { User, Mail, Phone, Building, Lock, Save, X, Bell, Clock, AlertTriangle, CheckCircle, Info, AlertCircle } from 'lucide-react';
+import notificationService from '@/services/notification.service';
+import type { Notification as NotificationType } from '@/services/notification.service';
+import { formatDistanceToNow } from 'date-fns';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -40,6 +43,8 @@ export default function Profile() {
   const { user, updateProfile, updatePassword } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationType[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -61,8 +66,43 @@ export default function Profile() {
         phone: user.phone || '',
         company: user.company || '',
       });
+      
+      // Load notifications
+      const fetchNotifications = async () => {
+        
+        try {
+          const response = await notificationService.getNotifications({ 
+            limit: 5, 
+            markRead: false,
+            userId: user?.id 
+          });
+          setNotifications(response.data);
+        } catch (error) {
+          console.error('Error fetching notifications:', error);
+        } finally {
+          setIsLoadingNotifications(false);
+        }
+      };
+      
+      fetchNotifications();
     }
   }, [user]);
+  
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'berthing_request':
+        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+      case 'berthing_approved':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'berthing_rejected':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'cargo_update':
+      case 'customs_update':
+        return <Info className="h-4 w-4 text-blue-500" />;
+      default:
+        return <Bell className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
@@ -366,6 +406,90 @@ export default function Profile() {
                 </Card>
               </form>
             </Form>
+          </div>
+          
+          {/* Notifications Card */}
+          <div className="md:col-span-3">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Bell className="h-5 w-5" />
+                    <CardTitle>Notifications</CardTitle>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={async () => {
+                      try {
+                        await notificationService.markAllAsRead();
+                        const response = await notificationService.getNotifications({ limit: 5 });
+                        setNotifications(response.data);
+                        toast({
+                          title: 'Marked all as read',
+                          description: 'All notifications have been marked as read.',
+                        });
+                      } catch (error) {
+                        console.error('Error marking notifications as read:', error);
+                      }
+                    }}
+                  >
+                    Mark all as read
+                  </Button>
+                </div>
+                <CardDescription>
+                  Recent notifications about your account and activities
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isLoadingNotifications ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Bell className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">No new notifications</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {notifications.map((notification) => (
+                      <div 
+                        key={notification._id}
+                        className={`flex items-start p-3 rounded-lg ${!notification.read ? 'bg-accent/50' : ''}`}
+                      >
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                        <div className="ml-3 flex-1 min-w-0">
+                          <p className="text-sm font-medium">{notification.title}</p>
+                          <p className="text-sm text-muted-foreground">{notification.message}</p>
+                          <div className="flex items-center mt-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                          </div>
+                        </div>
+                        {!notification.read && (
+                          <span className="h-2 w-2 rounded-full bg-primary" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+              {notifications.length > 0 && (
+                <CardFooter className="border-t px-6 py-3">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => navigate('/notifications')}
+                  >
+                    View all notifications
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
           </div>
         </div>
       </div>

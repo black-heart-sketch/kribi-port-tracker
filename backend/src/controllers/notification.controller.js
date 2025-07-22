@@ -6,10 +6,10 @@ import { asyncHandler } from '../middleware/async.middleware.js';
 // @route   GET /api/notifications
 // @access  Private
 export const getNotifications = asyncHandler(async (req, res, next) => {
-  const { read, type, limit = 20, page = 1 } = req.query;
+  const { read, type, limit = 20, page = 1,userId} = req.query;
   
   // Build query
-  const query = { user: req.user.id };
+  const query = { user: userId };
   
   if (read === 'true' || read === 'false') {
     query.read = read === 'true';

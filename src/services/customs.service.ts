@@ -50,11 +50,13 @@ const customsService = {
   async updateCargoStatus(
     cargoId: string,
     status: string,
-    notes?: string
+    notes?: string,
+    userId?: string
   ): Promise<CargoForClearance> {
     const response = await axiosInstance.put(`/customs/clearance/${cargoId}`, {
       status,
       notes,
+      userId
     });
     return response.data.data;
   },

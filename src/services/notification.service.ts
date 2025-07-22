@@ -38,6 +38,7 @@ interface GetNotificationsParams {
   limit?: number;
   page?: number;
   markRead?: boolean;
+  userId?: string;
 }
 
 const notificationService = {

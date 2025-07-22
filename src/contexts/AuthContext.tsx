@@ -8,6 +8,8 @@ export type User = {
   name: string;
   email: string;
   role: string;
+  phone?: string;
+  company?: string;
 };
 
 export type LoginFormData = {
@@ -23,6 +25,8 @@ export type SignupFormData = {
   password: string;
   confirmPassword: string;
   terms: boolean;
+  phone?: string;
+  company?: string;
 };
 
 type AuthContextType = {
